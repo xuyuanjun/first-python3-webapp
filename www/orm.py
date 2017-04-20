@@ -8,7 +8,7 @@ async def create_pool(loop, **kw):
     logging.info('create database connection pool...')
     global  __pool
     __pool = await aiomysql.create_pool(
-        host = kw.get('host', 'localhost'),
+        host = kw.get('host', '127.0.0.1'),
         port = kw.get('port', 3306),
         user = kw['user'],
         password = kw['password'],
@@ -69,7 +69,7 @@ class Field(object):
 
 class StringField(Field):
 
-    def __init(self, name=None, primary_key=False, default=None, ddl='varchar(100)'):
+    def __init__(self, name=None, primary_key=False, default=None, ddl='varchar(100)'):
         super().__init__(name, ddl, primary_key, default)
 
 class BooleanField(Field):
@@ -90,7 +90,7 @@ class FloatField(Field):
 class TextField(Field):
 
     def __init__(self, name=None, default=None):
-        super.__init__(name, 'text', False, default)
+        super().__init__(name, 'text', False, default)
 
 class ModelMetaclass(type):
 
@@ -106,7 +106,7 @@ class ModelMetaclass(type):
             if isinstance(v, Field):
                 logging.info(' found mapping: %s ==> %s' % (k, v))
                 mappings[k] = v
-                if v.primaryKey:
+                if v.primary_key:
                     if primaryKey:
                         raise RuntimeError('Duplicate primary key for field: %s' % k)
                     primaryKey = k
@@ -122,7 +122,7 @@ class ModelMetaclass(type):
         attrs['__primary_key__'] = primaryKey
         attrs['__fields__'] = fields
         attrs['__select__'] = 'select `%s`, %s from `%s`' % (primaryKey, ', '.join(escaped_fields), tableName)
-        attrs['__insert__'] = 'insert into `%s` (%s, `%s`) values (%s)' % (tableName, ', '.join(escaped_fields), primaryKey, create_args_string(len(escaped_fields)) + 1)
+        attrs['__insert__'] = 'insert into `%s` (%s, `%s`) values (%s)' % (tableName, ', '.join(escaped_fields), primaryKey, create_args_string(len(escaped_fields) + 1))
         attrs['__update__'] = 'update `%s` set %s where `%s`=?' % (tableName, ', '.join(map(lambda f: '`%s`=?' % (mappings.get(f).name or f), fields)), primaryKey)
         attrs['__delete__'] = 'delete from `%s` where `%s`=?' % (tableName, primaryKey)
         return type.__new__(cls, name, bases, attrs)
